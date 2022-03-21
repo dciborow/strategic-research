@@ -73,7 +73,7 @@ def explore():
 		doc_type = doc_type
 	)
 
-	content = dict()
+	content = {}
 	for topic in topics:
 
 		# run query and process response
@@ -145,7 +145,7 @@ def results():
 		date_range = request.form.get('dateRange','50')
 		sort_by = request.form.get('sortBy','date')
 		doc_type = index[:-1]
-	
+
 
 	# handle requests
 	if search_type == 'click_count': 
@@ -154,13 +154,13 @@ def results():
 		if filter_topic != 'all' and filter_element != 'all': 
 		# user filtered topic and elements in dashboard
 			clicked = f'for "{formatstr(filter_topic)}" and "{formatstr(filter_element)}"'
-		elif filter_topic != 'all' and filter_element =='all':
+		elif filter_topic != 'all':
 		# user filtered topic in dashboard
 			clicked = f'for "{formatstr(filter_topic)}"'
-		elif filter_topic == 'all' and filter_element != 'all':
+		elif filter_element != 'all':
 		# user filtered element in dashboard
 			clicked = f'for "{formatstr(filter_element)}"'
-		elif filter_topic == 'all' and filter_element == 'all':
+		else:
 		# no filters
 			clicked = f"for all {index}"
 
@@ -184,7 +184,7 @@ def results():
 			kwargs = query.get_query_arguments(filter_topic)
 			q = query.Query(**kwargs)
 			s = query.run_query(q.query, index=index, filters=filters)
-		
+
 
 	elif search_type == 'click_bar': 
 	# if user clicked on bar chart
@@ -192,16 +192,16 @@ def results():
 		if search_query == filter_topic and filter_element != 'all': 
 		# user filtered topic and elements in dashboard
 			clicked = f'for "{formatstr(search_query)}" and "{formatstr(filter_element)}"'
-		elif search_query == filter_topic and filter_element =='all':
+		elif search_query == filter_topic:
 		# user filtered topic in dashboard
 			clicked = f'for "{formatstr(search_query)}"'
-		elif search_query != filter_topic and filter_topic != 'all' and filter_element != 'all':
+		elif filter_topic != 'all' and filter_element != 'all':
 		# user filtered topic and elements in dashboard, and clicked on different bar
 			clicked = f'for "{formatstr(search_query)}", "{formatstr(filter_topic)}", and "{formatstr(filter_element)}"'
-		elif search_query != filter_topic and filter_topic != 'all' and  filter_element == 'all':
+		elif filter_topic != 'all':
 		# user filtered topic in dashboard, and clicked on different bar
 			clicked = f'for "{formatstr(search_query)}", and "{formatstr(filter_topic)}"'
-		elif search_query != filter_topic and filter_topic == 'all' and  filter_element != 'all':
+		elif filter_element != 'all':
 		# user filtered elements in dashboard, and clicked on different bar
 			clicked = f'for "{formatstr(search_query)}", and "{formatstr(filter_element)}"'
 		else:
@@ -227,13 +227,13 @@ def results():
 		if filter_topic != 'all' and filter_element != 'all': 
 		# user filtered topic and elements in dashboard
 			clicked = f'for "{search_query}", "{formatstr(filter_topic)}", and "{formatstr(filter_element)}"'
-		elif filter_topic != 'all' and filter_element =='all':
+		elif filter_topic != 'all':
 		# user filtered topic in dashboard
 			clicked = f'for "{search_query}", and "{formatstr(filter_topic)}"'
-		elif filter_topic == 'all' and filter_element != 'all':
+		elif filter_element != 'all':
 		# user filtered element in dashboard
 			clicked = f'for "{search_query}", and "{formatstr(filter_element)}"'
-		elif filter_topic == 'all' and filter_element == 'all':
+		else:
 		# no filters
 			clicked = f'for "{search_query}"'
 
@@ -256,10 +256,10 @@ def results():
 						}
 					}
 				}
-				
+
 			}
 		)
-			
+
 		s = query.run_query(q, index=index, filters=filters)
 
 	elif search_type == 'search' and search_query != 'None': 
@@ -268,13 +268,13 @@ def results():
 		if filter_topic != 'all' and filter_element != 'all': 
 		# user filtered topic and elements in dashboard
 			clicked = f'for "{search_query}", "{formatstr(filter_topic)}" and "{formatstr(filter_element)}"'
-		elif filter_topic != 'all' and filter_element =='all':
+		elif filter_topic != 'all':
 		# user filtered topic in dashboard
 			clicked = f'for "{search_query}", and "{formatstr(filter_topic)}"'
-		elif filter_topic == 'all' and filter_element != 'all':
+		elif filter_element != 'all':
 		# user filtered element in dashboard
 			clicked = f'for "{search_query}", and "{formatstr(filter_element)}"'
-		elif filter_topic == 'all' and filter_element == 'all':
+		else:
 		# no filters
 			clicked = f'for "{search_query}"'
 
@@ -286,7 +286,7 @@ def results():
 			date_range = date_range,
 			sort_by=sort_by
 		)
-		
+
 		q = Q({"multi_match" : {
 			"query" : search_query,
 			"fields" : [ "title", "abstract" ] 
@@ -295,15 +295,14 @@ def results():
 
 		s = query.run_query(q, index=index, filters=filters)
 
-	else:
-		if request.referrer.split('/')[-1] == 'explore':
-			return redirect(url_for('explore'))
+	elif request.referrer.split('/')[-1] == 'explore':
+		return redirect(url_for('explore'))
 
 
 	s = s[:1000] # pagination
 	r = s.execute()
 	# print(r[0].objectives)
-	
+
 	buttonStates=dict(
 		type = search_type,
 		topic = filter_topic,
@@ -324,16 +323,18 @@ def results():
 		date_range=date_range,
 		sort_by=sort_by
 	) 
-	
+
 	last_update = client.get(index='appdata', doc_type='doc', id=1)['_source']['last_update']
-	return render_template('results.html', 
-							title='Results', 
-							heading=f'Search Results',
-							content=r, 
-							clicked=clicked,
-							buttonStates=buttonStates,
-							formdata=formdata,
-							last_update=last_update)
+	return render_template(
+	    'results.html',
+	    title='Results',
+	    heading='Search Results',
+	    content=r,
+	    clicked=clicked,
+	    buttonStates=buttonStates,
+	    formdata=formdata,
+	    last_update=last_update,
+	)
 
 
 @application.route("/update/record/annotate", methods=['GET', 'POST'])

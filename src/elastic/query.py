@@ -36,8 +36,7 @@ class Query(object):
 		A query object for the provided query and field.
 
 		"""
-		# construct the query
-		q = Q(
+		return Q(
 			{
 				"match": {
 					f"{field}": {
@@ -47,8 +46,6 @@ class Query(object):
 				}
 			}
 		)
-
-		return q
 
 	def construct_boolean_clause(self, must_queries=[], 
 		should_queries=[], must_not_queries=[]):
@@ -78,11 +75,7 @@ class Query(object):
 		"""
 
 		def get_queries(field_query_list):
-			# example input: queries=[(field,query),...]
-			queries = []
-			for field, query in field_query_list:
-				queries.append(self.match(query, field))
-			return queries
+			return [self.match(query, field) for field, query in field_query_list]
 
 		must = []
 		should = [] 
@@ -258,23 +251,20 @@ def apply_filters(s, filters):
 	if element and element != "all":
 		s = s.filter("term", element_tags=element)
 
-	doc_type = filters.get('doc_type')
-	if doc_type:
+	if doc_type := filters.get('doc_type'):
 		s = s.filter("term", doc_type=doc_type)
 
 	status = filters.get("status")
 	if status and status != "all":
 		s = s.filter("term", status=status)
 
-	date_range = filters.get('date_range')
-	if date_range:
+	if date_range := filters.get('date_range'):
 		if filters.get('doc_type') == 'project':
 			s = s.filter("range", **{"start_date":{"gte":f"now-{date_range}y"}})
 		if filters.get('doc_type') == 'publication':
 			s = s.filter("range", **{"publication_date":{"gte":f"now-{date_range}y"}})
 
-	sort_by = filters.get('sort_by')
-	if sort_by:
+	if sort_by := filters.get('sort_by'):
 		if sort_by == 'score':
 			s = s.sort()
 		if sort_by == 'date':
@@ -293,17 +283,12 @@ def apply_filters(s, filters):
 
 def get_query_arguments(query):
 
-	query_terms = get_query_terms(query)
-	if query_terms:
-		args = dict()
-		for key in query_terms:
-			args[key] = [(field, term) 
-				for term in query_terms.get(key) 
-				for field in get_query_fields(term)]
-	else:
-		args = [(field, query) for field in get_query_fields(query)]
-	
-	return args
+	return ({
+	    key: [(field, term) for term in query_terms.get(key)
+	          for field in get_query_fields(term)]
+	    for key in query_terms
+	} if (query_terms := get_query_terms(query)) else
+	        [(field, query) for field in get_query_fields(query)])
 
 
 def run_query(q, index, filters=None):
@@ -328,7 +313,7 @@ def process_search_response(s, first=0, last=10):
 	""" function that process response from elasticsearch and formats
 	the response for front end """
 	# process documents returned by the search
-	hits = dict()
+	hits = {}
 	# response = response_dict()
 	ids = []
 	for h in s[first:last]:
@@ -338,9 +323,9 @@ def process_search_response(s, first=0, last=10):
 		abstract = h.abstract
 		matched_queries = list(h.meta.matched_queries)
 		score = h.meta.score
-		trid_terms = [term for term in h.TRID_INDEX_TERMS]
-		trid_subjects = [subject for subject in h.TRID_SUBJECT_AREAS]
-		
+		trid_terms = list(h.TRID_INDEX_TERMS)
+		trid_subjects = list(h.TRID_SUBJECT_AREAS)
+
 		# store documents returned by the search
 		hits[doc_id] = dict(
 			id =  doc_id,

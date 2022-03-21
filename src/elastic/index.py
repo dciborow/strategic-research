@@ -83,14 +83,11 @@ def index_documents(index_name, path_to_json_files,
 	if index_name not in ['projects', 'publications']:
 		raise(Exception(f"'{index_name}' is not a valid index name."))
 
-	DOC_TYPE = 'doc'
-	count = 0
 	all_json_files = os.listdir(path_to_json_files)
 
-	for file in all_json_files:
+	DOC_TYPE = 'doc'
+	for count, file in enumerate(all_json_files, start=1):
 
-		# for testing only
-		count += 1
 		if testing and count == 100:
 			return
 

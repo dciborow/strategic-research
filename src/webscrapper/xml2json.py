@@ -11,16 +11,16 @@ def fundingCheck(x):
       return None
 
 def dateCheck(x):
-  try:
-    date = datetime.strptime(x,'%Y%m%d').isoformat()[0:10]
-    return date
-  except ValueError:
-    if x[-4:] == '0000':
-      date = datetime.strptime(x[:-4]+'0101','%Y%m%d').isoformat()[0:10]
-      return date
-    if x[-2:] == '00':
-      date = datetime.strptime(x[:-2]+'01','%Y%m%d').isoformat()[0:10]
-      return date
+    try:
+        date = datetime.strptime(x,'%Y%m%d').isoformat()[:10]
+        return date
+    except ValueError:
+        if x[-4:] == '0000':
+            date = datetime.strptime(f'{x[:-4]}0101', '%Y%m%d').isoformat()[:10]
+            return date
+        if x[-2:] == '00':
+            date = datetime.strptime(f'{x[:-2]}01', '%Y%m%d').isoformat()[:10]
+            return date
 
 def dateCheck_pub(x):
   if x is None:
@@ -32,24 +32,22 @@ def dateCheck_pub(x):
   return x
 
 def fixStateName(x):
-  if x is None:
-    return x
-  x = x.lower()
-  with open('./files/states.csv','r', encoding='utf-8-sig') as f:
-    states = {}
-    for line in f:
-      name, abbrv = line.replace('\n','').split(',')
-      states[abbrv.lower()] = (name.lower(), abbrv.lower())
-  state, abbrv = states.get(x, [x, None])
-  if abbrv:
-    return abbrv.upper()
-  else:
-    for state, abbrv in states.values():
-      if x == state:
+    if x is None:
+      return x
+    x = x.lower()
+    with open('./files/states.csv','r', encoding='utf-8-sig') as f:
+      states = {}
+      for line in f:
+        name, abbrv = line.replace('\n','').split(',')
+        states[abbrv.lower()] = (name.lower(), abbrv.lower())
+    state, abbrv = states.get(x, [x, None])
+    if abbrv:
         return abbrv.upper()
-    else:
-      print(x)
-      raise(Exception)
+    for state, abbrv in states.values():
+        if x == state:
+          return abbrv.upper()
+    print(x)
+    raise(Exception)
 
 def agencyCheck(x):
     agency = {

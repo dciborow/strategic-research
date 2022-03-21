@@ -203,7 +203,7 @@ app.layout = html.Div(
 def callback_project_count(tag, element_tag):
 	print(tag)
 	queries = dict(tag=tag, element_tag=element_tag)
-	children=[
+	return [
 		html.A(
 			href=f"/search?type=click_count"\
 			f"&query={tag}&index=projects"\
@@ -214,7 +214,6 @@ def callback_project_count(tag, element_tag):
 			]
 		)
 	]
-	return children
 
 
 """ callback function for updating the publication count """
@@ -223,7 +222,7 @@ def callback_project_count(tag, element_tag):
 		dash.dependencies.Input('record-set-selection','value')])
 def callback_publication_count(tag, element_tag):
 	queries = dict(tag=tag, element_tag=element_tag)
-	children=[
+	return [
 		html.A(
 			href=f"/search?type=click_count"\
 			f"&query={tag}&index=publications"\
@@ -234,7 +233,6 @@ def callback_publication_count(tag, element_tag):
 			]
 		)
 	]
-	return children
 
 
 """ callback function for updating the project count map """
@@ -245,8 +243,7 @@ def callback_project_count_map(tag, element_tag):
 	queries = dict(tag=tag, element_tag=element_tag)
 	data = aggregate.project_count_by_state(queries=queries)
 	params = f"topic={tag}&element={element_tag}"
-	figure = fig.project_count_map(data=data, params=params)
-	return figure
+	return fig.project_count_map(data=data, params=params)
 
 
 """ callback function for updating attribute bar chart """
@@ -269,9 +266,7 @@ def callback_attribute_barchart(topic_selection, element_selection):
 	# get request parameters
 	params = [f"type=click_bar&query={attr}&index=projects&topic={topic_selection}&element={element_selection}" 
 				for attr in attributes]
-	# generate figure
-	figure = fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
-	return figure
+	return fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
 
 
 """ callback function for updating inputs bar chart """
@@ -294,9 +289,7 @@ def callback_input_barchart(topic_selection, element_selection):
 	# get request parameters
 	params = [f"type=click_bar&query={i}&index=projects&topic={topic_selection}&element={element_selection}" 
 				for i in inputs]
-	# generate figure
-	figure = fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
-	return figure
+	return fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
 
 
 """ callback function for updating performance bar chart """
@@ -318,9 +311,7 @@ def callback_performance_barchart(topic_selection, element_selection):
 		ids.append(id)
 	# get request parameters
 	params = [f"type=click_bar&query={perf}&index=projects&topic={topic_selection}&element={element_selection}" for perf in performance]
-	# generate figure
-	figure = fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
-	return figure
+	return fig.bar_chart(labels=labels, counts=counts, ids=ids, params=params)
 
 
 # """ callback function for updating funding heat map """

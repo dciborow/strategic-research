@@ -64,6 +64,7 @@ def project_count(queries=None):
 
 	allStatus = ['Active', 'Completed', 'Programmed', 'Proposed']
 
+	res={}
 	if queries:
 
 		tag = queries.get("tag")
@@ -81,7 +82,6 @@ def project_count(queries=None):
 		# 	q = query.Query(**kwargs)
 		# 	s = query.run_query(q.query, index='projects', filters=filters)
 		s = query.run_query(Q({"match_all":{}}), index=index, filters=filters)
-		res={}
 		res['total'] = s.count()
 		for status in allStatus:
 			res[status.lower()] = s.filter("match",status=status).count()
@@ -99,7 +99,6 @@ def project_count(queries=None):
 			}
 		)
 		s=s.query(total)
-		res={}
 		res['total'] = s.count()
 		for status in allStatus:
 			q = Q(
@@ -143,17 +142,14 @@ def project_count_by_topic(**kwargs):
 	response = s.execute()
 
 	# filter response
-	doc_ids = []
-	for b in response.aggregations.doc_ids.buckets:
-		doc_ids.append(b['key'])
-
+	doc_ids = [b['key'] for b in response.aggregations.doc_ids.buckets]
 	return count, doc_ids
 
 def publication_count(queries=None):
 
 	 # search object
 	s = Search(using=client,index='publications')
-	
+
 	if queries:
 
 		tag = queries.get("tag")
@@ -169,7 +165,7 @@ def publication_count(queries=None):
 		s = query.run_query(Q({"match_all":{}}), index=index, filters=filters)
 
 
-		count = s.count()
+		return s.count()
 
 	else:
 
@@ -184,9 +180,7 @@ def publication_count(queries=None):
 			}
 		)
 
-		count = s.query(total).count()
-
-	return count
+		return s.query(total).count()
 	
 def funding_by_state(**kwargs):
 

@@ -11,10 +11,18 @@ def project_count_map(data=None, params=None):
 	MAPBOX_ACCESS_TOKEN = r"pk.eyJ1IjoibnJvbWFubzciLCJhIjoiY2ppa2prYjQ2MWszczNsbnh5YnhkZTh1aSJ9.5qBV5E8g3oxlo3ZFL4n6Zw"
 	STATES_SHAPEFILE_PATH = r"./dashapp/app/static/geojson"
 	BINS = {
-		range(0, 1): [], range(1, 5): [], range(5, 10): [],
-		range(10, 15): [], range(15, 20): [], range(20, 25): [],
-		range(25, 30): [], range(30, 35): [], range(35, 40): [],
-		range(40, 45): [], range(45, 50): [], range(50, 200): []
+	    range(1): [],
+	    range(1, 5): [],
+	    range(5, 10): [],
+	    range(10, 15): [],
+	    range(15, 20): [],
+	    range(20, 25): [],
+	    range(25, 30): [],
+	    range(30, 35): [],
+	    range(35, 40): [],
+	    range(40, 45): [],
+	    range(45, 50): [],
+	    range(50, 200): [],
 	}
 	COLORSCALE = [
 		"#ffffff", "#eeeeee", "#e0e0e0",
@@ -24,25 +32,22 @@ def project_count_map(data=None, params=None):
 	]
 
 	# retrieve data if none provided
-	if data == None:
+	if data is None:
 		data = aggregate.project_count_by_state()
 
 	# bins, bin counts, and bin colors
 	colormap = dict(zip(BINS, COLORSCALE))
 	for item in list(data.items()):
-		for key in BINS:
+		for key, value_ in BINS.items():
 			if item[1].get('doc_count') in key:
-				BINS[key].append(item[0])
+				value_.append(item[0])
 
 	# get list of states with data
 	states_with_data = []
 	[states_with_data.append(s) for l in BINS.values() for s in l]
 
 	# legend set up
-	annotations = []
-	for i, bin in enumerate(BINS):
-		annotations.append(
-			dict(
+	annotations = [dict(
 				arrowcolor=colormap[bin],
 				arrowhead=0,
 				arrowwidth=10,
@@ -57,9 +62,7 @@ def project_count_map(data=None, params=None):
 				text=f"{min(bin)} - {max(bin)}" if min(bin) != max(bin) else f"{min(bin)}",
 				x=0.13,
 				y=0.75-(i/20)
-			)
-		)
-
+			) for i, bin in enumerate(BINS)]
 	# set up map layout
 	layout = dict(		
 		annotations=annotations,
@@ -88,7 +91,7 @@ def project_count_map(data=None, params=None):
 			b=0.01
 		),
 		paper_bgcolor='rgba(0,0,0,0)',
-    	plot_bgcolor='rgba(0,0,0,0)'
+	plot_bgcolor='rgba(0,0,0,0)'
 	)
 
 	# set up layers for states 
@@ -113,10 +116,7 @@ def project_count_map(data=None, params=None):
 			customdata.append(None)
 
 		# append hovertext
-		if data.get(state):
-			count = data.get(state).get('doc_count')
-		else:
-			count = 0
+		count = data.get(state).get('doc_count') if data.get(state) else 0
 		hovertext = (f"{geo[state]['full']}<br>" +
 					 f"<a href='/search?type=click_map&query={state}"\
 					 f"&index=projects&{params}' target='_blank'>" +
@@ -125,8 +125,8 @@ def project_count_map(data=None, params=None):
 
 		# append geolayers to layout
 		if state in states_with_data:
-			for b in BINS:
-				if state in BINS[b]:
+			for b, value in BINS.items():
+				if state in value:
 					color = colormap[b]
 					geo_layer = dict(
 						color=color,
@@ -139,7 +139,7 @@ def project_count_map(data=None, params=None):
 		else:
 			color = COLORSCALE[0]
 			geo_layer = dict(
-				
+
 				color=color,
 				opacity=0.7,
 				sourcetype='geojson',
@@ -159,29 +159,25 @@ def project_count_map(data=None, params=None):
 		type='scattermapbox'
 	)
 
-	figure = dict(data=[trace], layout=layout)
-	return figure
+	return dict(data=[trace], layout=layout)
 
 def bar_chart(labels, counts, ids, params=None):
 
 
 	# set up trace
 	trace = go.Bar(
-		hoverinfo="none",
-		customdata=[id for id in ids],
-		insidetextfont=dict(
-			color="black",
-			size=16
-		),
-		marker=dict(color="#3F729B"),
-		outsidetextfont=dict(
-			color="black",
-			size=16
-		),
-		text=[f"<a href='/search?{params[i]}' target='_blank' style='color:black'>{count}</a>" for i, count in enumerate(counts)],
-		textposition="auto",
-		x=labels,
-		y=counts
+	    hoverinfo="none",
+	    customdata=list(ids),
+	    insidetextfont=dict(color="black", size=16),
+	    marker=dict(color="#3F729B"),
+	    outsidetextfont=dict(color="black", size=16),
+	    text=[
+	        f"<a href='/search?{params[i]}' target='_blank' style='color:black'>{count}</a>"
+	        for i, count in enumerate(counts)
+	    ],
+	    textposition="auto",
+	    x=labels,
+	    y=counts,
 	)
 
 	# set up layout
@@ -193,17 +189,18 @@ def bar_chart(labels, counts, ids, params=None):
 		yaxis=dict(showgrid=False, showticklabels=False)
 	)
 
-	figure = go.Figure(data=[trace], layout=layout)
-
-	return figure
+	return go.Figure(data=[trace], layout=layout)
 
 def funding_heatmap(data=None):
 
 	# retrieve data and remove 'DC'
 	if not data:
 		data = aggregate.funding_by_state(topic="all", element="all")
-	states = [state for state in data.keys() if (state != 'DC') and (
-		sum([b["doc_count"] for b in list(data[state].values())]) != 0)]
+	states = [
+	    state for state in data.keys()
+	    if state != 'DC' and sum(b["doc_count"]
+	                             for b in list(data[state].values())) != 0
+	]
 	# state_labels = [geo[state.upper()]['abbrv'] if len(state) == 2 else geo[state]['abbrv'] finally state for state in states]
 
 	# filter
@@ -215,9 +212,7 @@ def funding_heatmap(data=None):
 	buckets = ['0.0-100000.0', '100000.0-250000.0', '250000.0-500000.0',
 			   '500000.0-750000.0', '750000.0-1000000.0', '1000000.0-*']
 	for b in buckets:
-		z = []
-		for state in states:
-			z.append(data[state][b]['doc_count'])
+		z = [data[state][b]['doc_count'] for state in states]
 		Z.append(z)
 
 	# format hover text for heatmap
@@ -228,18 +223,16 @@ def funding_heatmap(data=None):
 		for xi, state in enumerate(X):
 			# if xi == 0 and yi == 0:
 			hovertext[-1].append(
-				(f"State:  {state}<br>" +
-					f"Dollar Amount: {amount}<br>"+ 
-					f"<a href='search?state=all&all' target='_blank'>" +
-					f"Project Count</a> :  {Z[yi][xi]}")
-			)
+			    ((f"State:  {state}<br>" + f"Dollar Amount: {amount}<br>" +
+			      "<a href='search?state=all&all' target='_blank'>") +
+			     f"Project Count</a> :  {Z[yi][xi]}"))
 			xx.append(xi)
 			yy.append(yi)
-			# else:
-			# 	hovertext[-1].append(
-			# 		(f"State:  {xx}<br>" +
-			# 			f"Dollar Amount: {yy}<br>"+ 
-			# 			f"Project Count:  {Z[yi][xi]}"))
+					# else:
+					# 	hovertext[-1].append(
+					# 		(f"State:  {xx}<br>" +
+					# 			f"Dollar Amount: {yy}<br>"+ 
+					# 			f"Project Count:  {Z[yi][xi]}"))
 
 	trace1 = go.Heatmap(
 		z=Z,
@@ -264,9 +257,9 @@ def funding_heatmap(data=None):
 		y=[Y]*len(states),
 		mode="markers",
 		marker=dict(size= 14,
-                    line= dict(width=1),
-                    opacity= 0.3,
-                   ),
+	line= dict(width=1),
+	opacity= 0.3,
+	),
 		# text=hovertext
 	)
 
@@ -282,8 +275,6 @@ def funding_heatmap(data=None):
 		spikedistance=1,
 	)
 
-	figure = go.Figure(data=[trace1], layout=layout)
-
-	return figure
+	return go.Figure(data=[trace1], layout=layout)
 
 
